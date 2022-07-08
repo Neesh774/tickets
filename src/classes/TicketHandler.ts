@@ -1,7 +1,7 @@
 import DiscordClient from "@structures/DiscordClient";
 import { capitalize } from "@utils/functions";
 import { ITicket } from "@utils/interfaces";
-import { ButtonInteraction, Collection, Message, MessageActionRow, MessageButton, MessageSelectMenu, Permissions, SelectMenuInteraction } from "discord.js";
+import { ButtonInteraction, Collection, GuildMemberRoleManager, Message, MessageActionRow, MessageButton, MessageSelectMenu, Permissions, SelectMenuInteraction } from "discord.js";
 import Logger from "./Logger";
 
 export default class TicketHandler {
@@ -140,10 +140,45 @@ export default class TicketHandler {
                 title: `✉️ New ${capitalize(ticket.type)} Ticket`,
                 description: `${user.toString()} has created a new ticket.\n\`\`\`${ticket.description}\`\`\``,
                 timestamp: new Date()
-            }]
+            }],
+            components: [
+                new MessageActionRow().addComponents(
+                    new MessageButton().setCustomId(`close-${user.id}`).setLabel("Close Ticket").setStyle('PRIMARY')
+                )
+            ]
+        }).then(async msg => {
+            await msg.pin();
         })
         ticket.createdAt = new Date();
         this.sessions = this.sessions.filter((u) => u != user.id)
         this.tickets.set(user.id, ticket);
+    }
+
+    static async closeTicket(client: DiscordClient, interaction: ButtonInteraction) {
+        const userID = interaction.customId.split('-')[1];
+        const ticket = this.tickets.get(userID);
+        const channel = interaction.channel;
+        if (!ticket) return;
+        await interaction.reply({ content: "⚠️ Are you sure you want to delete this ticket? **This action cannot be undone**. Reply with `yes` to confirm, or anything else to cancel." })
+        const filter = (m: Message) => m.author.id == userID;
+        await channel.awaitMessages({ filter: filter, maxProcessed: 1, time: 60000, errors: ['time'] }).then(async (collected) => {
+            const msg = collected.first();
+            if (msg.content.toLowerCase() == 'yes') {
+                this.tickets.delete(userID);
+                await msg.delete();
+                await ticket.channel.permissionOverwrites.edit(userID, { VIEW_CHANNEL: false })
+                await interaction.editReply({
+                    content: "This ticket has been closed.",
+                })
+                const pinned = await interaction.channel.messages.fetchPinned();
+                await pinned.first().edit({
+                    components: [new MessageActionRow().addComponents(pinned.first().components[0].components[0].setDisabled(true))]
+                })
+            } else {
+                await interaction.reply({ content: "Ticket deletion cancelled.", ephemeral: true })
+            }
+        }).catch(async (e) => {
+            Logger.log("WARNING", e.stack);
+        })
     }
 }

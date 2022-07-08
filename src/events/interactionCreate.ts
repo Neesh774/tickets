@@ -16,5 +16,8 @@ export default class InteractionEvent extends Event {
         else if (interaction.isButton() && interaction.customId == "create-ticket") {
             TicketHandler.createTicket(this.client, interaction);
         }
+        else if (interaction.isButton() && interaction.customId.startsWith('close-')) {
+            TicketHandler.closeTicket(this.client, interaction);
+        }
     }
 }
