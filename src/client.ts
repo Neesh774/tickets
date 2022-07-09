@@ -14,16 +14,11 @@ moment.tz.setDefault('America/New_York');
 
 const client = new DiscordClient(
     {
-        ws: {
-            properties: {
-                $browser: 'Discord iOS'
-            }
-        },
         intents: ['GUILDS', 'GUILD_MEMBERS', 'GUILD_MESSAGE_REACTIONS', 'GUILD_MESSAGES', 'DIRECT_MESSAGES']
     },
     {
         token: process.env['TOKEN'],
-        owners: ['823984033179893840', '916505894953574490', '297504183282565130']
+        owners: ['297504183282565130']
     }
 );
 

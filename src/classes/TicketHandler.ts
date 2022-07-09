@@ -132,6 +132,9 @@ export default class TicketHandler {
             }, {
                 id: user.id,
                 allow: [Permissions.FLAGS.VIEW_CHANNEL]
+            }, {
+                id: '821782360776900650',
+                allow: [Permissions.FLAGS.VIEW_CHANNEL]
             }]
         });
         await ticket.channel.send({
