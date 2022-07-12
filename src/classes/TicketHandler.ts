@@ -11,18 +11,19 @@ export default class TicketHandler {
      * Creates a new ticket
      */
     static async createTicket(client: DiscordClient, interaction: ButtonInteraction) {
+        await interaction.deferReply({ ephemeral: true });
         const user = interaction.user;
         let cancelled = false;
         if (this.tickets.has(user.id)) {
-            await interaction.reply({ content: `You already have a ticket open. ${this.tickets.get(user.id).channel.toString()}`, ephemeral: true });
+            await interaction.editReply({ content: `You already have a ticket open. ${this.tickets.get(user.id).channel.toString()}` });
             return;
         }
         else if (this.sessions.includes(user.id)) {
-            await interaction.reply({ content: `You are already creating a ticket. Check your DMs!`, ephemeral: true });
+            await interaction.editReply({ content: `You are already creating a ticket. Check your DMs!` });
             return;
         }
         this.sessions.push(user.id)
-        interaction.reply({ content: "Check your DMs!", ephemeral: true })
+        interaction.editReply({ content: "Check your DMs!" })
         const ticket = {
             user: user
         } as ITicket;
@@ -69,6 +70,17 @@ export default class TicketHandler {
                 ).setMaxValues(1).setMinValues(1)
             )]
         })
+        const onError = async (e) => {
+            if (e.code == "INTERACTION_COLLECTOR_ERROR") {
+                cancelled = true;
+                await typePrompt.edit({
+                    components: []
+                })
+                return await channel.send({ content: "Ticket creation cancelled." });
+            }
+            await channel.send({ content: "An error occurred. Please try again later." });
+            Logger.log("WARNING", e.stack);
+        }
         const cancelFilter = (i: ButtonInteraction) => i.customId == "cancel" && i.user.id == user.id;
         channel.createMessageComponentCollector({ componentType: 'BUTTON', filter: cancelFilter }).on('collect', async (i: ButtonInteraction) => {
             cancelled = true;
@@ -91,9 +103,7 @@ export default class TicketHandler {
                     footer: { text: 'Ticket Creation • 2/2' }
                 }]
             })
-        }).catch((e) => {
-            Logger.log("WARNING", e.stack)
-        })
+        }).catch(onError)
         const descFilter = (m: Message) => {
             return m.author.id == user.id;
         };
@@ -109,9 +119,7 @@ export default class TicketHandler {
                     footer: { text: 'Ticket Creation' }
                 }]
             })
-        }).catch(async (e) => {
-            Logger.log("WARNING", e.stack);
-        })
+        }).catch(onError)
         const teamMap = {
             'GRAPHIC': ['842436092509814834'],
             'MOTION': ['842436092509814834'],
