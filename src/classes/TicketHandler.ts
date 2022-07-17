@@ -92,7 +92,7 @@ export default class TicketHandler {
         })
         const typeFilter = (i: SelectMenuInteraction) => i.customId == 'ticket-info' && i.user.id == user.id;
         if (cancelled) return;
-        await typePrompt.awaitMessageComponent({ componentType: 'SELECT_MENU', time: 60000, filter: typeFilter }).then(async (select: SelectMenuInteraction) => {
+        await typePrompt.awaitMessageComponent({ componentType: 'SELECT_MENU', time: 3600000, filter: typeFilter }).then(async (select: SelectMenuInteraction) => {
             if (cancelled) return;
             const type = select.values[0] as ITicket['type'];
             ticket.type = type;
@@ -166,11 +166,12 @@ export default class TicketHandler {
     }
 
     static async closeTicket(client: DiscordClient, interaction: ButtonInteraction) {
+        await interaction.deferReply({ ephemeral: true });
         const userID = interaction.customId.split('-')[1];
         const ticket = this.tickets.get(userID);
         const channel = interaction.channel;
         if (!ticket) return;
-        await interaction.reply({ content: "⚠️ Are you sure you want to delete this ticket? **This action cannot be undone**. Reply with `yes` to confirm, or anything else to cancel." })
+        await interaction.editReply({ content: "⚠️ Are you sure you want to delete this ticket? **This action cannot be undone**. Reply with `yes` to confirm, or anything else to cancel." })
         const filter = (m: Message) => m.author.id == userID;
         await channel.awaitMessages({ filter: filter, maxProcessed: 1, time: 60000, errors: ['time'] }).then(async (collected) => {
             const msg = collected.first();
@@ -178,15 +179,16 @@ export default class TicketHandler {
                 this.tickets.delete(userID);
                 await msg.delete();
                 await ticket.channel.permissionOverwrites.edit(userID, { VIEW_CHANNEL: false })
-                await interaction.editReply({
+                await interaction.followUp({
                     content: "This ticket has been closed.",
+                    ephemeral: true
                 })
                 const pinned = await interaction.channel.messages.fetchPinned();
                 await pinned.first().edit({
                     components: [new MessageActionRow().addComponents(pinned.first().components[0].components[0].setDisabled(true))]
                 })
             } else {
-                await interaction.reply({ content: "Ticket deletion cancelled.", ephemeral: true })
+                await interaction.editReply({ content: "Ticket deletion cancelled." })
             }
         }).catch(async (e) => {
             Logger.log("WARNING", e.stack);
