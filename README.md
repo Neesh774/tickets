@@ -2,6 +2,13 @@
 
 This bot allows users to press a button to create a ticket in their DMs, and creates a new channel for them and the appropriate team member. This bot is very expandable, and new commands or events can be created through the `commands` or `events` folders.
 
+## Usage
+
+1. [Create a Discord bot](https://discordpy.readthedocs.io/en/stable/discord.html)
+2. Create a `.env` file using `.env.example`.
+3. Run `npm install` to install libraries
+4. Run `npm run dev`
+
 ## Commands
 
 -   /sendTicketEmbed
