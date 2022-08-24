@@ -1,5 +1,5 @@
 # Flow Tickets
-
+*Built for a specific server, NOT meant for all servers*
 This bot allows users to press a button to create a ticket in their DMs, and creates a new channel for them and the appropriate team member. This bot is very expandable, and new commands or events can be created through the `commands` or `events` folders.
 
 ## Usage
